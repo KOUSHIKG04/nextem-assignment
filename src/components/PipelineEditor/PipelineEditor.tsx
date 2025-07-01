@@ -15,11 +15,13 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import dagre from "dagre";
-import { validateDAG } from "../../lib/dagUtils";
 import CustomNode from "./Node";
 import CustomEdge from "./Edge";
 import { Button } from "../ui/button";
-import { Plus, Trash2, Undo2, Layout } from "lucide-react";
+import { StatusBar } from "./StatusBar";
+import { ContextMenu } from "./ContextMenu";
+import { useDagValidation } from "./useDagValidation";
+import { Toolbar } from "./Toolbar";
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -29,7 +31,6 @@ const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const PipelineEditor: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [status, setStatus] = useState("Invalid: Add at least 2 nodes");
   const [jsonOpen, setJsonOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -41,8 +42,7 @@ const PipelineEditor: React.FC = () => {
   );
   const { fitView } = useReactFlow();
 
-  const reactFlowRef = React.useRef<any>(null);
-
+  // Helper to push current state to history
   const pushToHistory = useCallback(() => {
     setHistory((h) => [...h, { nodes, edges }]);
   }, [nodes, edges]);
@@ -66,21 +66,15 @@ const PipelineEditor: React.FC = () => {
     ]);
   }, [setNodes, pushToHistory]);
 
-  useEffect(() => {
-    const result = validateDAG(nodes, edges);
-    setStatus(result.message);
-  }, [nodes, edges]);
+  const dagValidation = useDagValidation(nodes, edges);
+  const { message } = dagValidation;
 
-  const isValid = status.toLowerCase().startsWith("valid");
-  const invalidEdgeIds = useMemo(() => {
-    const result = validateDAG(nodes, edges);
-    return result.invalidEdgeIds || [];
-  }, [nodes, edges]);
+  // const isValid = status.toLowerCase().startsWith("valid");
+  const invalidEdgeIds = dagValidation.invalidEdgeIds || [];
 
   const onConnect = useCallback(
     (params: Edge | Connection) => {
       if (params.source === params.target) return; // Disallow self-loops
-
       if (params.sourceHandle !== "out" || params.targetHandle !== "in") return; // Only allow outgoing (right) to incoming (left)
       pushToHistory();
       setEdges((eds) =>
@@ -90,7 +84,6 @@ const PipelineEditor: React.FC = () => {
     [setEdges, pushToHistory]
   );
 
-  // Delete node/edge
   const onNodesDelete = useCallback(
     (deleted: Node[]) => {
       pushToHistory();
@@ -112,7 +105,7 @@ const PipelineEditor: React.FC = () => {
     [setEdges, pushToHistory]
   );
 
-  // Auto Layout implementation
+  // Auto Layout
   const handleAutoLayout = useCallback(() => {
     pushToHistory();
     const g = new dagre.graphlib.Graph();
@@ -131,7 +124,7 @@ const PipelineEditor: React.FC = () => {
     setNodes(newNodes);
   }, [nodes, edges, setNodes, pushToHistory]);
 
-  // fit after layout
+  // Zoom to fit after layout
   useEffect(() => {
     fitView({ padding: 0.2 });
   }, [nodes, fitView]);
@@ -173,37 +166,24 @@ const PipelineEditor: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-full font-sans">
       <div className="flex items-center gap-4 py-3 px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="flex gap-2">
-          <Button onClick={handleAddNode}>
-            <Plus /> Add Node
-          </Button>
-          <Button onClick={handleAutoLayout}>
-            <Layout /> Auto Layout
-          </Button>
-          <Button onClick={handleUndo}>
-            <Undo2 /> Undo
-          </Button>
-        </div>
+        <Toolbar
+          onAddNode={handleAddNode}
+          onAutoLayout={handleAutoLayout}
+          onUndo={handleUndo}
+          onToggleJson={() => setJsonOpen((o) => !o)}
+        />
         <div className="flex gap-2 ml-auto">
           <Button onClick={() => setJsonOpen((o) => !o)}>JSON Preview</Button>
         </div>
       </div>
       <div className="flex justify-center items-center">
-        <div
-          className={`text-center mt-2 px-4 py-3 rounded-lg text-base font-medium sticky top-14 z-20 max-w-md w-full border border-gray-200 bg-slate-100 ${
-            isValid ? "text-slate-900" : "text-red-600"
-          }`}
-        >
-          {" "}
-          {status}
-        </div>
+        <StatusBar status={message} />
       </div>
       <div
         className="flex-1 min-h-0 bg-white rounded-none m-2 shadow-none border border-gray-200 overflow-hidden relative"
         onContextMenu={(e) => handleContextMenu(e)}
       >
         <ReactFlow
-          ref={reactFlowRef}
           nodes={nodes.map((n) => ({ ...n, type: "custom" }))}
           edges={edges.map((e) => ({
             ...e,
@@ -225,18 +205,12 @@ const PipelineEditor: React.FC = () => {
           <Background />
         </ReactFlow>
         {contextMenu && (
-          <div
-            className="fixed z-50 bg-white border border-gray-300 rounded shadow-lg"
-            style={{ top: contextMenu.y, left: contextMenu.x }}
-            onMouseLeave={handleCloseContextMenu}
-          >
-            <div
-              className="p-2 cursor-pointer flex items-center gap-2 hover:bg-gray-100"
-              onClick={handleDelete}
-            >
-              <Trash2 size={16} /> Delete
-            </div>
-          </div>
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onDelete={handleDelete}
+            onClose={handleCloseContextMenu}
+          />
         )}
       </div>
       {jsonOpen && (

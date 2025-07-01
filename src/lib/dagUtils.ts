@@ -1,3 +1,10 @@
+/**
+ * Validates a Directed Acyclic Graph (DAG) for cycles, connectivity, and self-loops.
+ * @param nodes - Array of nodes in the graph.
+ * @param edges - Array of edges in the graph.
+ * @returns An object with validity, a detailed message, and a list of invalid edge IDs.
+ */
+
 import { Node, Edge } from 'reactflow';
 
 export function validateDAG(nodes: Node[], edges: Edge[]): { valid: boolean; message: string; invalidEdgeIds: string[] } {
@@ -9,10 +16,12 @@ export function validateDAG(nodes: Node[], edges: Edge[]): { valid: boolean; mes
     const adj: Record<string, string[]> = {};
     nodes.forEach((n) => (adj[n.id] = []));
     const invalidEdgeIds: string[] = [];
+    let hasSelfLoop = false;
     for (const edge of edges) {
         // Self-loop
         if (edge.source === edge.target) {
             invalidEdgeIds.push(edge.id);
+            hasSelfLoop = true;
         }
         // Outgoing->Outgoing or Incoming->Incoming (simulate by only allowing source->target)
         if (!adj[edge.source]) adj[edge.source] = [];
@@ -65,10 +74,13 @@ export function validateDAG(nodes: Node[], edges: Edge[]): { valid: boolean; mes
                 const edge = edges.find(e => e.source === from && e.target === to);
                 if (edge) invalidEdgeIds.push(edge.id);
             }
-            return { valid: false, message: 'INVALID DAG: The graph contains a cycle', invalidEdgeIds };
+            return { valid: false, message: 'INVALID: The graph contains a cycle', invalidEdgeIds };
         }
     }
 
+    if (hasSelfLoop) {
+        return { valid: false, message: 'INVALID: The graph contains a self-loop', invalidEdgeIds };
+    }
 
-    return { valid: true, message: 'VALID DAG', invalidEdgeIds };
+    return { valid: true, message: 'VALID: The graph is a valid DAG', invalidEdgeIds };
 } 
