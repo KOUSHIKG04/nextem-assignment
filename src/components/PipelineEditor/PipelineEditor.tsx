@@ -35,7 +35,15 @@ const PipelineEditor: React.FC = () => {
     y: number;
     nodeId?: string;
   } | null>(null);
+  const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>(
+    []
+  );
+
   const reactFlowRef = React.useRef<any>(null);
+
+  const pushToHistory = useCallback(() => {
+    setHistory((h) => [...h, { nodes, edges }]);
+  }, [nodes, edges]);
 
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
   const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
@@ -43,6 +51,7 @@ const PipelineEditor: React.FC = () => {
   const handleAddNode = useCallback(() => {
     const label = prompt("Enter node name:");
     if (!label) return;
+    pushToHistory();
     const id = `${Date.now()}`;
     setNodes((nds) => [
       ...nds,
@@ -53,7 +62,7 @@ const PipelineEditor: React.FC = () => {
         type: "default",
       },
     ]);
-  }, [setNodes]);
+  }, [setNodes, pushToHistory]);
 
   useEffect(() => {
     const result = validateDAG(nodes, edges);
@@ -70,16 +79,18 @@ const PipelineEditor: React.FC = () => {
       if (params.source === params.target) return; // Disallow self-loops
 
       if (params.sourceHandle !== "out" || params.targetHandle !== "in") return; // Only allow outgoing (right) to incoming (left)
+      pushToHistory();
       setEdges((eds) =>
         addEdge({ ...params, markerEnd: { type: MarkerType.ArrowClosed } }, eds)
       );
     },
-    [setEdges]
+    [setEdges, pushToHistory]
   );
 
   // Delete node/edge
   const onNodesDelete = useCallback(
     (deleted: Node[]) => {
+      pushToHistory();
       setNodes((nds) => nds.filter((n) => !deleted.find((d) => d.id === n.id)));
       setEdges((eds) =>
         eds.filter(
@@ -87,18 +98,20 @@ const PipelineEditor: React.FC = () => {
         )
       );
     },
-    [setNodes, setEdges]
+    [setNodes, setEdges, pushToHistory]
   );
 
   const onEdgesDelete = useCallback(
     (deleted: Edge[]) => {
+      pushToHistory();
       setEdges((eds) => eds.filter((e) => !deleted.find((d) => d.id === e.id)));
     },
-    [setEdges]
+    [setEdges, pushToHistory]
   );
 
   // Auto Layout implementation
   const handleAutoLayout = useCallback(() => {
+    pushToHistory();
     const g = new dagre.graphlib.Graph();
     g.setDefaultEdgeLabel(() => ({}));
     g.setGraph({ rankdir: "LR" });
@@ -120,7 +133,7 @@ const PipelineEditor: React.FC = () => {
         reactFlowRef.current.fitView({ padding: 0.2 });
       }
     }, 100);
-  }, [nodes, edges, setNodes]);
+  }, [nodes, edges, setNodes, pushToHistory]);
 
   const handleContextMenu = useCallback(
     (event: React.MouseEvent, nodeId?: string) => {
@@ -133,8 +146,14 @@ const PipelineEditor: React.FC = () => {
   const handleCloseContextMenu = () => setContextMenu(null);
 
   const handleUndo = useCallback(() => {
-    alert("Undo not implemented");
-  }, []);
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      const prev = h[h.length - 1];
+      setNodes(prev.nodes);
+      setEdges(prev.edges);
+      return h.slice(0, -1);
+    });
+  }, [setNodes, setEdges]);
 
   const handleDelete = useCallback(() => {
     if (contextMenu?.nodeId) {
