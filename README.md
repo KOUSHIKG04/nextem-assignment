@@ -1,4 +1,4 @@
-# Visual Pipeline Editor 
+# Visual Pipeline Editor
 
 A modern, interactive visual editor for building and validating Directed Acyclic Graphs (DAGs) using React, TypeScript, React Flow, and Tailwind CSS.
 
@@ -65,13 +65,11 @@ A modern, interactive visual editor for building and validating Directed Acyclic
 
 ---
 
-## 🎥 Demo & Screenshots
+## Demo Video
+- [Screen recording link](https://drive.google.com/file/d/12Rhdy1gCN8D-v7QjTKvmRglRcTEcEP25/view?usp=sharing/)
 
-> **[Add your screen recording link here]**
->
-> ![Screenshot 1](./screenshots/editor-main.png)
-> ![Screenshot 2](./screenshots/editor-validation.png)
-
+## Hosted link
+- [Vercel Hosted link](https://nextem-assignment.vercel.app/)
 ---
 
 ## 💡 Challenges Faced & Solutions
