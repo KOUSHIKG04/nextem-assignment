@@ -11,6 +11,7 @@ import ReactFlow, {
   ReactFlowProvider,
   MarkerType,
   FitViewOptions,
+  useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import dagre from "dagre";
@@ -18,7 +19,7 @@ import { validateDAG } from "../../lib/dagUtils";
 import CustomNode from "./Node";
 import CustomEdge from "./Edge";
 import { Button } from "../ui/button";
-import { Plus, Trash2, Link2, Undo2, Layout } from "lucide-react";
+import { Plus, Trash2, Undo2, Layout } from "lucide-react";
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -38,6 +39,7 @@ const PipelineEditor: React.FC = () => {
   const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>(
     []
   );
+  const { fitView } = useReactFlow();
 
   const reactFlowRef = React.useRef<any>(null);
 
@@ -118,22 +120,20 @@ const PipelineEditor: React.FC = () => {
     nodes.forEach((node) => g.setNode(node.id, { width: 172, height: 36 }));
     edges.forEach((edge) => g.setEdge(edge.source, edge.target));
     dagre.layout(g);
-    setNodes((nds) =>
-      nds.map((node) => {
-        const pos = g.node(node.id);
-        return {
-          ...node,
-          position: { x: pos.x, y: pos.y },
-        };
-      })
-    );
-
-    setTimeout(() => {
-      if (reactFlowRef.current) {
-        reactFlowRef.current.fitView({ padding: 0.2 });
-      }
-    }, 100);
+    const newNodes = nodes.map((node) => {
+      const pos = g.node(node.id);
+      return {
+        ...node,
+        position: { x: pos.x, y: pos.y },
+      };
+    });
+    setNodes(newNodes);
   }, [nodes, edges, setNodes, pushToHistory]);
+
+  // fit after layout
+  useEffect(() => {
+    fitView({ padding: 0.2 });
+  }, [nodes, fitView]);
 
   const handleContextMenu = useCallback(
     (event: React.MouseEvent, nodeId?: string) => {
