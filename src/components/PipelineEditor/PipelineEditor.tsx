@@ -71,6 +71,7 @@ const PipelineEditor: React.FC = () => {
     setStatus(result.message);
   }, [nodes, edges]);
 
+  const isValid = status.toLowerCase().startsWith("valid");
   const invalidEdgeIds = useMemo(() => {
     const result = validateDAG(nodes, edges);
     return result.invalidEdgeIds || [];
@@ -188,7 +189,12 @@ const PipelineEditor: React.FC = () => {
         </div>
       </div>
       <div className="flex justify-center items-center">
-        <div className="text-center mt-2 text-slate-900 bg-slate-100 px-4 py-3 rounded-lg text-base font-medium sticky top-14 z-20 max-w-md w-full border border-gray-200">
+        <div
+          className={`text-center mt-2 px-4 py-3 rounded-lg text-base font-medium sticky top-14 z-20 max-w-md w-full border border-gray-200 bg-slate-100 ${
+            isValid ? "text-slate-900" : "text-red-600"
+          }`}
+        >
+          {" "}
           {status}
         </div>
       </div>
