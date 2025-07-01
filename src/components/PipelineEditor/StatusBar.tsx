@@ -1,5 +1,3 @@
-import React from "react";
-
 type StatusBarProps = { status: string };
 
 export function StatusBar({ status }: StatusBarProps) {
