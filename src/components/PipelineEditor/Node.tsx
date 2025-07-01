@@ -9,18 +9,17 @@ const isValidOutgoing = (connection: Connection) =>
 const CustomNode: React.FC<NodeProps> = ({ data, selected }) => {
   const accent = data.accent || "#18181b";
   const isOutput = data.accent === "#ec4899" || data.label === "OUTPUT";
-  const borderColor =
-    data.type === "input" ? "#22d3ee" : isOutput ? "#ec4899" : accent;
+  const borderColor = selected
+    ? "#2563eb"
+    : data.type === "input"
+      ? "#22d3ee"
+      : isOutput
+        ? "#ec4899"
+        : accent;
 
   return (
     <div
-      className={`min-w-[120px] min-h-[38px] flex items-center justify-center rounded-lg font-mono text-[1.08rem] font-medium uppercase tracking-wider transition-colors transition-border duration-150 relative px-5 py-2.5 shadow-none border-[1.5px] ${
-        selected
-          ? "border-blue-600"
-          : isOutput
-          ? "border-pink-500 text-pink-500"
-          : "border-gray-800 text-gray-800"
-      } bg-white`}
+      className={`min-w-[120px] min-h-[38px] flex items-center justify-center rounded-lg font-mono text-[1.08rem] font-medium uppercase tracking-wider transition-colors transition-border duration-150 relative px-5 py-2.5 shadow-none border-[1.5px] bg-white`}
       style={{
         borderColor,
         color: accent,
